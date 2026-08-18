@@ -64,7 +64,9 @@ done
 
 # ----------------------------------------------------------------- install
 install -d "$BIN" "$LIB" "$APPS"
+rm -rf "$LIB/arcshot"
 cp -r "$SRC/src/arcshot" "$LIB/"
+find "$LIB" -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
 install -m755 "$SRC/bin/arcshot" "$BIN/arcshot"
 install -m644 "$SRC/data/arcshot.desktop" "$APPS/arcshot.desktop"
 command -v update-desktop-database >/dev/null && update-desktop-database -q "$APPS" 2>/dev/null || true
