@@ -47,9 +47,11 @@ missing_hard=()
 for b in python3 grim slurp; do command -v "$b" >/dev/null || missing_hard+=("$b"); done
 python3 -c 'import gi; gi.require_version("Gtk","4.0"); gi.require_version("Adw","1")' 2>/dev/null \
   || missing_hard+=("python-gobject with GTK4 + libadwaita")
+python3 -c 'import gi; gi.require_version("Gtk4LayerShell","1.0")' 2>/dev/null \
+  || missing_hard+=("gtk4-layer-shell (the toolbar must sit above slurp)")
 if (( ${#missing_hard[@]} )); then
   echo "Missing required dependencies: ${missing_hard[*]}" >&2
-  echo "On Arch:  sudo pacman -S python-gobject gtk4 libadwaita grim slurp" >&2
+  echo "On Arch:  sudo pacman -S python-gobject gtk4 libadwaita gtk4-layer-shell grim slurp" >&2
   exit 1
 fi
 

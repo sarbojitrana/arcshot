@@ -80,6 +80,46 @@ def _slurp_window():
     return p.stdout.strip()
 
 
+def _window_rects():
+    """Rectangles for every visible window on the active workspace."""
+    if not shutil.which("hyprctl"):
+        return None
+    try:
+        clients = json.loads(subprocess.run(
+            ["hyprctl", "-j", "clients"], capture_output=True,
+            text=True, check=True).stdout)
+        ws = json.loads(subprocess.run(
+            ["hyprctl", "-j", "activeworkspace"], capture_output=True,
+            text=True, check=True).stdout)["id"]
+    except (subprocess.CalledProcessError, ValueError, KeyError):
+        return None
+    rects = []
+    for c in clients:
+        if c.get("hidden") or not c.get("mapped", True):
+            continue
+        if c.get("workspace", {}).get("id") != ws:
+            continue
+        x, y = c.get("at", [0, 0])
+        w, h = c.get("size", [0, 0])
+        if w > 0 and h > 0:
+            rects.append(f"{x},{y} {w}x{h}")
+    return "\n".join(rects) if rects else None
+
+
+def slurp_argv(area):
+    """(argv, stdin) for arming a selection without blocking the caller.
+
+    Used by the overlay, which runs slurp asynchronously so the toolbar stays
+    responsive while the screen is live.
+    """
+    _require("slurp")
+    if area == "window":
+        rects = _window_rects()
+        if rects:
+            return ["slurp", "-r"], rects
+    return ["slurp"], None
+
+
 def resolve_geometry(area):
     """Return (geometry_or_None, cancelled)."""
     if area == "screen":

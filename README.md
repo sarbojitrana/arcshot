@@ -12,10 +12,10 @@ It is the GNOME screenshot flow, on Wayland, without GNOME.
 
 ## What it does
 
-- **One key for everything.** Press it and you are straight into the region
-  drag — no dialog, no confirm step. Press it *again while recording* and the
-  recording stops. The chooser is there when you want to change something,
-  on a modifier.
+- **The screen is live the moment it opens.** Press the key and you can drag a
+  region immediately — no picking a mode, no shutter button. The toolbar sits
+  on top of the selection so you can still switch to video, screen or window if
+  you want something else. Press the key *again while recording* to stop.
 - **Image or video**, **whole screen / region / window**, and for video,
   **audio on or off** with a system-or-microphone source.
 - **Include the pointer or not** on screenshots.
@@ -37,15 +37,15 @@ Installs to `~/.local` (no root). `sudo ./install.sh --system` puts it in
 Then bind it. In `~/.config/hypr/conf/custom.conf`:
 
 ```
-bind = , Print,        exec, arcshot          # capture now / stop recording
-bind = SUPER, Print,   exec, arcshot --menu   # change mode, area, audio
+bind = , Print,      exec, arcshot                # overlay, selection armed
+bind = SUPER, Print, exec, arcshot --shot screen  # whole screen, no overlay
 ```
 
 ## Requirements
 
 | | |
 |---|---|
-| **Required** | `python-gobject` (GTK 4 + libadwaita), `grim`, `slurp` |
+| **Required** | `python-gobject` (GTK 4 + libadwaita), `gtk4-layer-shell`, `grim`, `slurp` |
 | **Recording** | `wf-recorder` |
 | **Clipboard** | `wl-clipboard` |
 | **Notifications** | `libnotify` |
@@ -54,7 +54,7 @@ bind = SUPER, Print,   exec, arcshot --menu   # change mode, area, audio
 On Arch:
 
 ```bash
-sudo pacman -S python-gobject gtk4 libadwaita grim slurp wf-recorder wl-clipboard libnotify swappy
+sudo pacman -S python-gobject gtk4 libadwaita gtk4-layer-shell grim slurp wf-recorder wl-clipboard libnotify swappy
 ```
 
 The installer checks all of these and tells you which optional features you'd
@@ -65,8 +65,7 @@ be missing before it writes anything.
 The GUI is optional — every mode has a flag, so you can bind them directly.
 
 ```
-arcshot                 capture now with remembered settings, or stop recording
-arcshot --menu          open the chooser
+arcshot                 open the capture overlay, or stop an active recording
 arcshot --stop          stop an active recording
 arcshot --shot AREA     screenshot now      (screen | region | window)
 arcshot --rec  AREA     start recording now (screen | region | window)
@@ -122,26 +121,28 @@ current workspace and feeds those rectangles to `slurp -r`, so you click a
 window rather than dragging a box around it. On a compositor without `hyprctl`
 it falls back to region select.
 
+**The toolbar is a layer-shell surface, not an ordinary window.** `slurp` draws
+on the wlroots `overlay` layer, and an xdg-toplevel always sits *below* layer
+surfaces — the toolbar would be invisible and unclickable during selection. So
+it uses `gtk4-layer-shell` on the same layer.
+
+Two consequences worth knowing:
+
+- Within a layer, the most recently mapped surface is on top. `slurp` is spawned
+  after the toolbar, so the toolbar re-maps itself once slurp is up, otherwise
+  the selection tint is painted over it and it reads washed-out grey.
+- `gtk4-layer-shell` must be linked *before* `libwayland-client`, which Python
+  cannot control. arcshot re-execs itself once with `LD_PRELOAD` set. Only the
+  overlay path does this — `--stop` and the direct capture flags never load GTK
+  at all.
+
 **The window is closed, not hidden, before capturing.** The application is held
 open with `Gtk.Application.hold()` so it survives its own window going away.
 Merely hiding the surface left it visible for a frame or two, which looked like
 the dialog lingering during region select.
 
-**Placement is left to the compositor.** Wayland clients cannot position
-themselves, so put it where you want with a rule. For bottom-centre in
-Hyprland:
-
-```
-windowrule {
-    match:class = (dev.arcshot.Arcshot)
-    float = true
-    move = 744 674
-}
-```
-
-Note that in Hyprland 0.56's keyed rule syntax a percentage `move` silently
-ignores the Y component, and the `50%-190` arithmetic form only applies X —
-absolute pixels apply on both axes.
+**Placement** is handled by layer-shell: bottom-anchored with a 90px margin.
+No compositor window rule needed.
 
 ## Limitations
 

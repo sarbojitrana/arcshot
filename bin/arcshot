@@ -10,6 +10,11 @@ for cand in (os.path.join(os.path.dirname(_here), "src"),
         sys.path.insert(0, cand)
         break
 
+# the layer-shell re-exec runs `python3 -m arcshot`, so make sure the package
+# directory stays on PYTHONPATH across the exec
+os.environ["PYTHONPATH"] = os.pathsep.join(
+    [p for p in [sys.path[0], os.environ.get("PYTHONPATH", "")] if p])
+
 from arcshot.__main__ import main  # noqa: E402
 
 sys.exit(main())
