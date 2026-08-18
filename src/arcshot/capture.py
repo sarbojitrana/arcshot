@@ -97,6 +97,8 @@ def take_screenshot(cfg, geometry):
     path = os.path.join(cfg["image_dir"], f"arcshot_{_stamp()}.png")
 
     cmd = ["grim"]
+    if cfg.get("cursor"):
+        cmd.append("-c")
     if geometry:
         cmd += ["-g", geometry]
     cmd.append(path)
@@ -148,6 +150,9 @@ def is_recording():
 
 
 def start_recording(cfg, geometry):
+    # NOTE: wf-recorder has no cursor switch -- it always draws the pointer.
+    # The cursor setting therefore applies to screenshots only, and the UI
+    # hides it in video mode rather than pretending it does something.
     _require("wf-recorder")
     if is_recording():
         raise CaptureError("already recording")

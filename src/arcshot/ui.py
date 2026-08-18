@@ -58,6 +58,7 @@ class Window(Adw.ApplicationWindow):
     def __init__(self, app, cfg):
         super().__init__(application=app, title="arcshot")
         self.cfg = cfg
+        self._held = False
         self.set_default_size(380, -1)
         self.set_resizable(False)
 
@@ -77,6 +78,16 @@ class Window(Adw.ApplicationWindow):
                          cfg["mode"], self._set_mode))
         root.append(_seg([("screen", "Screen"), ("region", "Region"),
                           ("window", "Window")], cfg["area"], self._set_area))
+
+        # pointer row - screenshots only (wf-recorder always draws the cursor)
+        self.cursor_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        cl = Gtk.Label(label="Include pointer", xalign=0)
+        cl.add_css_class("arc-sub"); cl.set_hexpand(True)
+        self.cursor_sw = Gtk.Switch(active=cfg.get("cursor", False),
+                                    valign=Gtk.Align.CENTER)
+        self.cursor_sw.connect("notify::active", self._set_cursor)
+        self.cursor_box.append(cl); self.cursor_box.append(self.cursor_sw)
+        root.append(self.cursor_box)
 
         # audio row - only meaningful while recording
         self.audio_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -114,14 +125,23 @@ class Window(Adw.ApplicationWindow):
     def _set_mode(self, k): self.cfg["mode"] = k; self._sync()
     def _set_area(self, k): self.cfg["area"] = k; self._sync()
     def _set_audio(self, sw, _): self.cfg["audio"] = sw.get_active()
+    def _set_cursor(self, sw, _): self.cfg["cursor"] = sw.get_active()
     def _set_audio_src(self, dd, _):
         self.cfg["audio_source"] = "system" if dd.get_selected() == 0 else "mic"
 
     def _sync(self):
         video = self.cfg["mode"] == "video"
         self.audio_box.set_visible(video)
+        self.cursor_box.set_visible(not video)
         self.go.set_label("Start recording" if video else "Capture")
         self.sub.set_label("screen recording" if video else "screenshot")
+
+    def _finish(self):
+        app = self.get_application()
+        if getattr(self, "_held", False):
+            self._held = False
+            app.release()
+        app.quit()
 
     def _key(self, _c, keyval, *_a):
         if keyval == Gdk.KEY_Escape:
@@ -133,16 +153,23 @@ class Window(Adw.ApplicationWindow):
     # ----------------------------------------------------------- action
     def _go(self):
         config.save(self.cfg)
-        self.set_visible(False)
-        # let the compositor actually drop the window before we grab anything
-        GLib.timeout_add(180, self._run)
+        # Hold the application so it survives the window going away, then
+        # actually CLOSE the window rather than just hiding it -- a hidden
+        # surface can still linger for a frame, and it looked like the dialog
+        # was hanging around during region select.
+        app = self.get_application()
+        app.hold()
+        self._held = True
+        self.close()
+        # give the compositor a frame or two to drop the surface for real
+        GLib.timeout_add(160, self._run)
 
     def _run(self):
         cfg = self.cfg
         try:
             geom, cancelled = capture.resolve_geometry(cfg["area"])
             if cancelled:
-                self.get_application().quit()
+                self._finish()
                 return False
 
             if cfg["mode"] == "image":
@@ -158,7 +185,7 @@ class Window(Adw.ApplicationWindow):
         except capture.CaptureError as exc:
             capture.notify("arcshot failed", str(exc),
                            icon="dialog-error", urgent=True)
-        self.get_application().quit()
+        self._finish()
         return False
 
 

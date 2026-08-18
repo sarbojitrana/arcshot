@@ -17,6 +17,7 @@ It is the GNOME screenshot flow, on Wayland, without GNOME.
   a tray icon.
 - **Image or video**, **whole screen / region / window**, and for video,
   **audio on or off** with a system-or-microphone source.
+- **Include the pointer or not** on screenshots.
 - **Remembers your last choice**, so the common case is press-key, press-Enter.
 - Screenshots land on the **clipboard** as well as on disk.
 - Optional hand-off to **swappy** for annotation.
@@ -91,6 +92,7 @@ module:
   "area": "region",
   "audio": false,
   "audio_source": "system",
+  "cursor": false,
   "copy_to_clipboard": true,
   "open_editor": false,
   "image_dir": "",
@@ -117,12 +119,32 @@ current workspace and feeds those rectangles to `slurp -r`, so you click a
 window rather than dragging a box around it. On a compositor without `hyprctl`
 it falls back to region select.
 
-**The window hides before capturing.** There's a short delay after hiding so the
-compositor has actually dropped it — otherwise the chooser ends up in your
-screenshot.
+**The window is closed, not hidden, before capturing.** The application is held
+open with `Gtk.Application.hold()` so it survives its own window going away.
+Merely hiding the surface left it visible for a frame or two, which looked like
+the dialog lingering during region select.
+
+**Placement is left to the compositor.** Wayland clients cannot position
+themselves, so put it where you want with a rule. For bottom-centre in
+Hyprland:
+
+```
+windowrule {
+    match:class = (dev.arcshot.Arcshot)
+    float = true
+    move = 744 674
+}
+```
+
+Note that in Hyprland 0.56's keyed rule syntax a percentage `move` silently
+ignores the Y component, and the `50%-190` arithmetic form only applies X —
+absolute pixels apply on both axes.
 
 ## Limitations
 
+- **The pointer toggle applies to screenshots only.** `wf-recorder` has no
+  cursor switch — it always draws the pointer — so the UI hides that row in
+  video mode rather than offering a control that does nothing.
 - Region and window select need `slurp`, so this is wlroots-only. It will not
   work on GNOME's Mutter or on KDE.
 - `wf-recorder` records one output at a time; multi-monitor capture into a

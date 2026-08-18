@@ -11,6 +11,7 @@ DEFAULTS = {
     "area": "region",       # screen | region | window
     "audio": False,
     "audio_source": "system",   # system | mic
+    "cursor": False,            # include the pointer (screenshots only)
     "copy_to_clipboard": True,
     "open_editor": False,
     "image_dir": "",        # blank -> XDG Pictures/Screenshots
