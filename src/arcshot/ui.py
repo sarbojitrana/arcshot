@@ -257,7 +257,13 @@ class Overlay(Gtk.ApplicationWindow):
 
 class App(Adw.Application):
     def __init__(self):
-        super().__init__(application_id=APP_ID)
+        # NON_UNIQUE on purpose. With the default single-instance behaviour a
+        # stale process still holding the bus name makes every later launch
+        # exit 0 with no window -- the capture key just silently stops working,
+        # and nothing in the logs says why. A capture tool should always be
+        # able to start.
+        super().__init__(application_id=APP_ID,
+                         flags=Gio.ApplicationFlags.NON_UNIQUE)
 
     def do_activate(self):
         prov = Gtk.CssProvider()
