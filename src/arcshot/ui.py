@@ -43,6 +43,7 @@ def _seg(labels, active, on_change):
     first = None
     for key, label in labels:
         btn = Gtk.ToggleButton(label=label)
+        btn.set_can_focus(False)
         if first is None:
             first = btn
         else:
@@ -115,9 +116,17 @@ class Window(Adw.ApplicationWindow):
 
         self.set_content(root)
 
-        esc = Gtk.EventControllerKey()
-        esc.connect("key-pressed", self._key)
-        self.add_controller(esc)
+        # CAPTURE phase, not the default BUBBLE: whichever toggle button holds
+        # focus would otherwise swallow Enter and re-activate itself, so Enter
+        # appeared to press "Image" rather than Capture.
+        keys = Gtk.EventControllerKey()
+        keys.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        keys.connect("key-pressed", self._key)
+        self.add_controller(keys)
+
+        # and make Capture the focused/default widget on open
+        self.set_default_widget(self.go)
+        self.go.grab_focus()
 
         self._sync()
 

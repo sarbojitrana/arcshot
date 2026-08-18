@@ -12,9 +12,10 @@ It is the GNOME screenshot flow, on Wayland, without GNOME.
 
 ## What it does
 
-- **One key for everything.** Press it to open the chooser. Press it *again
-  while recording* and the recording stops — no second binding, no hunting for
-  a tray icon.
+- **One key for everything.** Press it and you are straight into the region
+  drag — no dialog, no confirm step. Press it *again while recording* and the
+  recording stops. The chooser is there when you want to change something,
+  on a modifier.
 - **Image or video**, **whole screen / region / window**, and for video,
   **audio on or off** with a system-or-microphone source.
 - **Include the pointer or not** on screenshots.
@@ -36,7 +37,8 @@ Installs to `~/.local` (no root). `sudo ./install.sh --system` puts it in
 Then bind it. In `~/.config/hypr/conf/custom.conf`:
 
 ```
-bind = , Print, exec, arcshot
+bind = , Print,        exec, arcshot          # capture now / stop recording
+bind = SUPER, Print,   exec, arcshot --menu   # change mode, area, audio
 ```
 
 ## Requirements
@@ -63,7 +65,8 @@ be missing before it writes anything.
 The GUI is optional — every mode has a flag, so you can bind them directly.
 
 ```
-arcshot                 open the chooser, or stop an active recording
+arcshot                 capture now with remembered settings, or stop recording
+arcshot --menu          open the chooser
 arcshot --stop          stop an active recording
 arcshot --shot AREA     screenshot now      (screen | region | window)
 arcshot --rec  AREA     start recording now (screen | region | window)
