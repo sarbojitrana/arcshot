@@ -12,10 +12,13 @@ It is the GNOME screenshot flow, on Wayland, without GNOME.
 
 ## What it does
 
-- **The screen is live the moment it opens.** Press the key and you can drag a
-  region immediately — no picking a mode, no shutter button. The toolbar sits
-  on top of the selection so you can still switch to video, screen or window if
-  you want something else. Press the key *again while recording* to stop.
+- **The screen is live the moment it opens.** Press the key and drag a region
+  straight away — no picking a mode, no shutter button.
+- **The toolbar stays usable while the screen is live.** Normal cursor over the
+  toolbar, crosshair everywhere else, and the buttons actually click, so you
+  can switch to video / screen / window without cancelling first.
+- **Recordings keep the toolbar up** with an elapsed timer and a Stop button.
+  Screenshots just take the shot and get out of the way.
 - **Image or video**, **whole screen / region / window**, and for video,
   **audio on or off** with a system-or-microphone source.
 - **Include the pointer or not** on screenshots.
@@ -121,25 +124,33 @@ current workspace and feeds those rectangles to `slurp -r`, so you click a
 window rather than dragging a box around it. On a compositor without `hyprctl`
 it falls back to region select.
 
-**The toolbar is a layer-shell surface, not an ordinary window.** `slurp` draws
-on the wlroots `overlay` layer, and an xdg-toplevel always sits *below* layer
-surfaces — the toolbar would be invisible and unclickable during selection. So
-it uses `gtk4-layer-shell` on the same layer.
+**The overlay draws its own selection instead of shelling out to `slurp`.**
+That is not gold-plating. `slurp` takes the pointer for the entire screen, so
+with it armed the toolbar buttons cannot be clicked and the crosshair follows
+you over the toolbar — there is no way to change mode without cancelling first.
+Owning the surface means the canvas gets a crosshair, the toolbar keeps a normal
+cursor, and both work at once.
 
-Two consequences worth knowing:
+The layout is one fullscreen `gtk4-layer-shell` surface on the `overlay` layer
+holding a `Gtk.Overlay`: a `DrawingArea` painting the dim and selection, with the
+toolbar floated on top. `slurp` is still used by the `--shot` / `--rec` CLI
+flags, where there is no toolbar to compete with.
 
-- Within a layer, the most recently mapped surface is on top. `slurp` is spawned
-  after the toolbar, so the toolbar re-maps itself once slurp is up, otherwise
-  the selection tint is painted over it and it reads washed-out grey.
+Three traps worth writing down:
+
 - `gtk4-layer-shell` must be linked *before* `libwayland-client`, which Python
   cannot control. arcshot re-execs itself once with `LD_PRELOAD` set. Only the
-  overlay path does this — `--stop` and the direct capture flags never load GTK
-  at all.
+  overlay path does this — `--stop` and the capture flags never load GTK.
+- The window needs a Python reference held on the application. Without one the
+  wrapper is garbage-collected, the window goes with it, and the process exits 0
+  having mapped nothing.
+- libadwaita paints checked toggle buttons with the accent colour from a
+  provider that outranks even `PRIORITY_USER`, so a red Stop button cannot be
+  done with CSS on the widget. Its label carries the colour as Pango markup.
 
-**The window is closed, not hidden, before capturing.** The application is held
-open with `Gtk.Application.hold()` so it survives its own window going away.
-Merely hiding the surface left it visible for a frame or two, which looked like
-the dialog lingering during region select.
+**The overlay is taken off screen before the grab**, with a 260 ms gap so the
+compositor has really dropped it — otherwise the toolbar lands in your own
+screenshot.
 
 **Placement** is handled by layer-shell: bottom-anchored with a 90px margin.
 No compositor window rule needed.

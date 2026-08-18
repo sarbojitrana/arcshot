@@ -44,44 +44,25 @@ def _slurp_region():
 
 
 def _slurp_window():
-    """Let the user click a window. slurp -r reads candidate rects on stdin."""
-    _require("slurp", "hyprctl")
-    try:
-        raw = subprocess.run(["hyprctl", "-j", "clients"],
-                             capture_output=True, text=True, check=True).stdout
-        clients = json.loads(raw)
-    except (subprocess.CalledProcessError, ValueError):
-        return _slurp_region()
-
-    try:
-        ws = json.loads(subprocess.run(["hyprctl", "-j", "activeworkspace"],
-                                       capture_output=True, text=True,
-                                       check=True).stdout)["id"]
-    except Exception:                                        # noqa: BLE001
-        ws = None
-
-    rects = []
-    for c in clients:
-        if c.get("hidden") or not c.get("mapped", True):
-            continue
-        if ws is not None and c.get("workspace", {}).get("id") != ws:
-            continue
-        x, y = c.get("at", [0, 0])
-        w, h = c.get("size", [0, 0])
-        if w > 0 and h > 0:
-            rects.append(f"{x},{y} {w}x{h}")
+    """CLI path only: let the user click a window via `slurp -r`."""
+    _require("slurp")
+    rects = window_rects()
     if not rects:
         return _slurp_region()
-
-    p = subprocess.run(["slurp", "-r"], input="\n".join(rects),
+    data = "\n".join(f"{x},{y} {w}x{h}" for x, y, w, h in rects)
+    p = subprocess.run(["slurp", "-r"], input=data,
                        capture_output=True, text=True)
     if p.returncode != 0 or not p.stdout.strip():
         return None
     return p.stdout.strip()
 
 
-def _window_rects():
-    """Rectangles for every visible window on the active workspace."""
+def window_rects():
+    """(x, y, w, h) for every visible window on the active workspace.
+
+    Ordered back-to-front, so when several contain the pointer the LAST match
+    is the topmost one.
+    """
     if not shutil.which("hyprctl"):
         return None
     try:
@@ -102,22 +83,8 @@ def _window_rects():
         x, y = c.get("at", [0, 0])
         w, h = c.get("size", [0, 0])
         if w > 0 and h > 0:
-            rects.append(f"{x},{y} {w}x{h}")
-    return "\n".join(rects) if rects else None
-
-
-def slurp_argv(area):
-    """(argv, stdin) for arming a selection without blocking the caller.
-
-    Used by the overlay, which runs slurp asynchronously so the toolbar stays
-    responsive while the screen is live.
-    """
-    _require("slurp")
-    if area == "window":
-        rects = _window_rects()
-        if rects:
-            return ["slurp", "-r"], rects
-    return ["slurp"], None
+            rects.append((x, y, w, h))
+    return rects or None
 
 
 def resolve_geometry(area):
