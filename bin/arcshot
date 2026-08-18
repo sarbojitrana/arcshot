@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+import os
+import sys
+
+# Resolve the package whether we are running from a checkout or an install.
+_here = os.path.dirname(os.path.realpath(__file__))
+for cand in (os.path.join(os.path.dirname(_here), "src"),
+             os.path.join(os.path.dirname(_here), "lib", "arcshot")):
+    if os.path.isdir(os.path.join(cand, "arcshot")):
+        sys.path.insert(0, cand)
+        break
+
+from arcshot.__main__ import main  # noqa: E402
+
+sys.exit(main())
