@@ -167,6 +167,14 @@ No compositor window rule needed.
 - The audio source is whatever PipeWire/Pulse reports as default at the moment
   recording starts. Changing your default sink mid-recording won't follow.
 
+## Contributing
+
+Patches welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) — note that **signed
+commits are required**. [AGENTS.md](AGENTS.md) documents the non-obvious
+constraints (layer-shell, `LD_PRELOAD`, why selection is drawn in-process
+rather than by `slurp`); read it before changing anything that looks odd,
+because most of it is load-bearing.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
