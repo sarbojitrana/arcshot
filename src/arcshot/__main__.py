@@ -55,9 +55,10 @@ def _usage():
         "  arcshot              open the capture overlay with the selection\n"
         "                       already armed, or stop an active recording\n"
         "  arcshot --stop       stop an active recording\n"
+        "  arcshot --pause      pause or resume an active recording\n"
         "  arcshot --shot AREA  screenshot now: screen | region | window\n"
         "  arcshot --rec AREA   record now:     screen | region | window\n"
-        "  arcshot --status     print 'recording' or 'idle'\n"
+        "  arcshot --status     print 'recording', 'paused' or 'idle'\n"
         "  arcshot --help\n"
     )
 
@@ -93,7 +94,21 @@ def main(argv=None):
         return 0
 
     if "--status" in argv:
-        print("recording" if capture.is_recording() else "idle")
+        if capture.is_paused():
+            print("paused")
+        else:
+            print("recording" if capture.is_recording() else "idle")
+        return 0
+
+    if "--pause" in argv:
+        # Useful when the recording covers the whole screen from a keybind:
+        # there is no toolbar in that case, by design.
+        if not capture.is_recording():
+            capture.notify("Nothing to pause", "No recording is running.")
+            return 1
+        paused = capture.toggle_pause()
+        capture.notify("Recording paused" if paused else "Recording resumed",
+                       "", icon="media-record")
         return 0
 
     if "--stop" in argv:

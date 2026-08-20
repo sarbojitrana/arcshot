@@ -9,8 +9,9 @@ CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 DEFAULTS = {
     "mode": "image",        # image | video
     "area": "region",       # screen | region | window
-    "audio": False,
-    "audio_source": "system",   # system | mic
+    "mic": False,           # record the microphone
+    "system_audio": False,  # record what the speakers are playing
+    "timer": 0,             # seconds of countdown before capturing
     "cursor": False,            # include the pointer (screenshots only)
     "copy_to_clipboard": True,
     "open_editor": False,
@@ -38,11 +39,19 @@ def _xdg_dir(kind, fallback):
 
 def load():
     data = dict(DEFAULTS)
+    stored = {}
     try:
         with open(CONFIG_FILE) as fh:
-            data.update(json.load(fh))
+            stored = json.load(fh)
     except (OSError, ValueError):
         pass
+    data.update(stored)
+    # Mic and system sound used to be one switch plus an either/or dropdown.
+    # Carry that choice over rather than silently resetting someone's audio.
+    if "audio" in stored and "mic" not in stored:
+        src = stored.get("audio_source", "system")
+        data["mic"] = bool(stored["audio"]) and src == "mic"
+        data["system_audio"] = bool(stored["audio"]) and src != "mic"
     if not data["image_dir"]:
         data["image_dir"] = os.path.join(_xdg_dir("PICTURES", "~/Pictures"), "Screenshots")
     if not data["video_dir"]:
