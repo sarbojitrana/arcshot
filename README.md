@@ -63,7 +63,7 @@ the old version.
 
 | | |
 |---|---|
-| **Required** | `python-gobject` (GTK 4 + libadwaita), `gtk4-layer-shell`, `grim`, `slurp` |
+| **Required** | `python-gobject` (GTK 4 + libadwaita), `python-cairo`, `gtk4-layer-shell`, `grim`, `slurp` |
 | **Recording** | `wf-recorder`, plus `ffmpeg` to join the parts of a paused recording |
 | **Recording audio** | PipeWire or PulseAudio, for `pactl` |
 | **Clipboard** | `wl-clipboard` |
@@ -73,7 +73,7 @@ the old version.
 On Arch:
 
 ```bash
-sudo pacman -S python-gobject gtk4 libadwaita gtk4-layer-shell grim slurp wf-recorder ffmpeg wl-clipboard libnotify swappy
+sudo pacman -S python-gobject python-cairo gtk4 libadwaita gtk4-layer-shell grim slurp wf-recorder ffmpeg wl-clipboard libnotify swappy
 ```
 
 The installer checks all of these and tells you which optional features you'd

@@ -49,9 +49,13 @@ python3 -c 'import gi; gi.require_version("Gtk","4.0"); gi.require_version("Adw"
   || missing_hard+=("python-gobject with GTK4 + libadwaita")
 python3 -c 'import gi; gi.require_version("Gtk4LayerShell","1.0")' 2>/dev/null \
   || missing_hard+=("gtk4-layer-shell (the toolbar must sit above slurp)")
+# python-cairo is only an *optional* dependency of python-gobject, so it is
+# perfectly possible to have everything else and still fall over on import.
+python3 -c 'import cairo' 2>/dev/null \
+  || missing_hard+=("python-cairo (the overlay paints its selection with it)")
 if (( ${#missing_hard[@]} )); then
   echo "Missing required dependencies: ${missing_hard[*]}" >&2
-  echo "On Arch:  sudo pacman -S python-gobject gtk4 libadwaita gtk4-layer-shell grim slurp" >&2
+  echo "On Arch:  sudo pacman -S python-gobject python-cairo gtk4 libadwaita gtk4-layer-shell grim slurp" >&2
   exit 1
 fi
 

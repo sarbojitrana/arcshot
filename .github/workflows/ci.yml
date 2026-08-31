@@ -44,7 +44,7 @@ jobs:
       - name: Install the documented dependencies
         run: |
           pacman -Syu --noconfirm --needed \
-            git python python-gobject gtk4 libadwaita gtk4-layer-shell
+            git python python-gobject python-cairo gtk4 libadwaita gtk4-layer-shell
 
       - uses: actions/checkout@v4
 
