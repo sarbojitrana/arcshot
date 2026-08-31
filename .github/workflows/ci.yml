@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Syntax and lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Byte-compile everything
+        run: |
+          python -m compileall -q src
+          # bin/arcshot has no .py suffix, so compileall walks straight past it
+          python -m py_compile bin/arcshot
+
+      - name: Lint
+        run: |
+          python -m pip install --disable-pip-version-check --quiet ruff
+          ruff check src bin/arcshot
+
+  imports:
+    # The GUI cannot be exercised here -- there is no compositor on a runner,
+    # so the overlay never maps and nothing can be captured. What this does
+    # catch is the class of mistake that only shows up at import time: a typo
+    # at module scope, a name that moved, a forgotten import.
+    name: Imports
+    runs-on: ubuntu-latest
+    # Arch because the project targets it, and because these are exactly the
+    # package names README tells a user to install.
+    container: archlinux:latest
+    steps:
+      - name: Install the documented dependencies
+        run: |
+          pacman -Syu --noconfirm --needed \
+            git python python-gobject gtk4 libadwaita gtk4-layer-shell
+
+      - uses: actions/checkout@v4
+
+      - name: Import every module
+        working-directory: src
+        run: |
+          python -c "import arcshot.capture, arcshot.config, arcshot.__main__"
+          python -c "import arcshot.ui"
+
+      - name: The no-GTK paths must stay no-GTK
+        working-directory: src
+        run: |
+          # --stop and --status are the time-critical paths and must never
+          # drag the toolkit in. Importing them should not load gi at all.
+          python - <<'PY'
+          import sys
+          import arcshot.__main__            # noqa: F401
+          assert "gi" not in sys.modules, "importing __main__ pulled in GTK"
+          print("ok: no gi in sys.modules")
+          PY

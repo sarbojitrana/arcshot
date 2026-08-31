@@ -1,0 +1,11 @@
+version: 2
+updates:
+  # There is no Python manifest to watch -- arcshot's dependencies are system
+  # packages (grim, slurp, wf-recorder), which Dependabot cannot see. What it
+  # can keep current is the actions used by the workflows above.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "ci"

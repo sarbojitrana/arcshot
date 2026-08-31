@@ -1,0 +1,12 @@
+# Ruff's default rule set widens between releases, so it is pinned here: CI
+# should fail because this repo broke, not because a linter shipped a new
+# opinion. These are the families that catch mistakes rather than restyle
+# working code -- undefined names, unused imports, dead code, import
+# placement, and the bug patterns bugbear knows about.
+#
+# Deliberately not enabled: UP (percent formatting is used for Pango markup),
+# DTZ (capture filenames want local time), PLW1510 (return codes are checked
+# by hand, with intent), I (the gi.require_version dance has to come before
+# the imports it guards).
+[lint]
+select = ["E4", "E7", "E9", "F", "B"]
