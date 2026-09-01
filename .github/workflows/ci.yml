@@ -13,7 +13,7 @@ jobs:
     name: Syntax and lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v7
         with:
@@ -46,7 +46,7 @@ jobs:
           pacman -Syu --noconfirm --needed \
             git python python-gobject python-cairo gtk4 libadwaita gtk4-layer-shell
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Import every module
         working-directory: src
